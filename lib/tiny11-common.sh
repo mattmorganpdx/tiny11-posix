@@ -71,11 +71,14 @@ cleanup() {
 # exists (unlike reg.exe). So we expand every "[create]" block into its
 # ancestor chain (shallow -> deep) first. Re-declaring an existing key is
 # harmless. Delete blocks ("[-...]") pass through untouched.
+# The prefix reaches awk through ENVIRON: `awk -v` would run escape processing
+# on it, and gawk turns "HKEY_LOCAL_MACHINE\SYSTEM" into "...MACHINESYSTEM".
 # ---------------------------------------------------------------------------
 merge_reg() {
     local hive="$1" prefix="$2" tmp
     tmp="$(mktemp)"
-    awk -v prefix="$prefix" '
+    REG_PREFIX="$prefix" awk '
+        BEGIN { prefix = ENVIRON["REG_PREFIX"] }
         function emit_ancestors(key,   rest, n, parts, i, acc) {
             rest = substr(key, length(prefix) + 1)
             sub(/^\\/, "", rest)
